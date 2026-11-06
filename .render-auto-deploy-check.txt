@@ -1,4 +1,5 @@
-JSK Composite — automatic deployment integration check
-Test date: 2026-11-07
-Purpose: Verify Render detects a commit to the main branch without a manual deploy.
-This file is not included in the published dist directory and does not affect site content.
+JSK Composite — Render automatic deployment verification
+Check date: 2026-11-07
+Integration: linked GitHub repo jskcompositeoffice-spec/jsk-composite
+Purpose: verify commit to main causes an automatic Render deploy.
+This file is deliberately not included in published website assets.
