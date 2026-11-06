@@ -1,0 +1,24 @@
+name: Verify Render public website
+on:
+  push:
+    paths:
+      - ".github/workflows/verify-render.yml"
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check public URL and essential resources
+        shell: bash
+        run: |
+          set -u
+          base="https://jsk-composite.onrender.com"
+          for round in 1 2 3; do
+            echo "=== Round $round ==="
+            for path in / /index.html /style.css /training-catalog.js; do
+              code=$(curl --connect-timeout 8 --max-time 20 -L -sS -o /tmp/jsk-check -w '%{http_code}' "$base$path" || true)
+              bytes=$(wc -c < /tmp/jsk-check || echo 0)
+              echo "PAGE $path STATUS $code BYTES $bytes"
+            done
+            if [ "$round" != 3 ]; then sleep 8; fi
+          done
