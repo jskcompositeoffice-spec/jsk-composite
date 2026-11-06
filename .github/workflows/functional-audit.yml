@@ -29,7 +29,7 @@ jobs:
             try{const note=await fn();console.log('PASS '+name+(note?' | '+note:''));passed++}
             catch(e){console.error('FAIL '+name+' | '+e.stack);failed++}
           }
-          const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+          (async()=>{const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
           const context=await browser.newContext({viewport:{width:1440,height:900}});
           async function newPage(country='PL',viewport=null){
             const page=await context.newPage();
@@ -77,6 +77,6 @@ jobs:
             const b=p.locator('#menuBtn');assert(await b.isVisible());await b.click();assert.equal(await b.getAttribute('aria-expanded'),'true');
             await p.locator('#nav a[href="#materials"]').click();assert.equal(await b.getAttribute('aria-expanded'),'false');await p.close();
           });
-          await browser.close();console.log('AUDIT RESULTS passed='+passed+' failed='+failed);if(failed)process.exit(1);
+          await browser.close();console.log('AUDIT RESULTS passed='+passed+' failed='+failed);if(failed)process.exitCode=1;})().catch(e=>{console.error(e);process.exitCode=1});
           JAVASCRIPT
           node audit.cjs
