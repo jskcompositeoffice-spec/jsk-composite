@@ -20,7 +20,7 @@
     apply(country==="PL"?"PL":["DE","AT","CH"].includes(country)?"DE":"EN");
   }
   buttons.forEach(button=>button.addEventListener("click",()=>{
-    if(!scripted) { ++request; preference(button.dataset.lang); show(false); }
+    if(!scripted) { ++request; preference(button.dataset.lang); show(false); const url=new URL(location.href); if(url.searchParams.has("lang")){url.searchParams.set("lang",button.dataset.lang.toLowerCase());history.replaceState(null,"",url);} }
   }));
   auto.addEventListener("click",()=>{preference(null);const url=new URL(location.href);url.searchParams.delete("lang");history.replaceState(null,"",url);detect();});
   let manual;try {manual=localStorage.getItem(KEY);}catch{}

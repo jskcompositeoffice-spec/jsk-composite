@@ -1,6 +1,8 @@
 /* Translations for static content and accessibility labels. */
 (() => {
   const rows = [
+    ['.workforce-flag>span','EU','UE','EU'],
+    ['[data-filter="mro"],.foot-links a[href="#mro"]','Aviation MRO','Lotnictwo MRO','Luftfahrt MRO'],
     ['.top span:first-child','ENGINEERED MATERIALS · GLOBAL SOURCING · B2B','MATERIAŁY TECHNICZNE · GLOBALNE ZAOPATRZENIE · B2B','TECHNISCHE MATERIALIEN · GLOBALE BESCHAFFUNG · B2B'],
     ['.top span:last-child','POLAND / EUROPE','POLSKA / EUROPA','POLEN / EUROPA'],
     ['#nav a[href="#dual"],.foot-links a[href="#dual"]','Dual-Use','Podwójne zastosowanie','Duale Verwendung'],
@@ -40,9 +42,9 @@
   ];
   const L={EN:0,PL:1,DE:2};
   const extra={
-    EN:{skipLink:'Skip to content',courseSearch:'Search training courses'},
-    PL:{skipLink:'Przejdź do treści',courseSearch:'Szukaj szkoleń'},
-    DE:{skipLink:'Zum Inhalt springen',courseSearch:'Schulungen suchen'}
+    EN:{footerCountry:'Poland',skipLink:'Skip to content',courseSearch:'Search training courses'},
+    PL:{footerCountry:'Polska',skipLink:'Przejdź do treści',courseSearch:'Szukaj szkoleń'},
+    DE:{footerCountry:'Polen',skipLink:'Zum Inhalt springen',courseSearch:'Schulungen suchen'}
   };
   Object.keys(extra).forEach(l=>Object.assign(T[l],extra[l]));
   function update(){
@@ -74,6 +76,7 @@
     const codes={Austria:'AT',Belgium:'BE',Bulgaria:'BG',Croatia:'HR',Cyprus:'CY',Czechia:'CZ',Denmark:'DK',Estonia:'EE',Finland:'FI',France:'FR',Germany:'DE',Greece:'GR',Hungary:'HU',Ireland:'IE',Italy:'IT',Latvia:'LV',Lithuania:'LT',Luxembourg:'LU',Malta:'MT',Netherlands:'NL',Poland:'PL',Portugal:'PT',Romania:'RO',Slovakia:'SK',Slovenia:'SI',Spain:'ES',Sweden:'SE'};
     document.querySelectorAll('[name="delivery_country"] option').forEach(el=>{const value=el.value;el.value=value;el.textContent=codes[value]?names.of(codes[value]):['Other','Inny','Andere'][k];});
     document.querySelectorAll('[data-t="skipLink"],[data-t="courseSearch"]').forEach(el=>el.textContent=T[l][el.dataset.t]);
+    document.querySelector('[data-t="privacyLink"]').href='/privacy.html#'+l.toLowerCase();
     document.title=['JSK Composite — Materials, Engineering & Training','JSK Composite — Materiały, inżynieria i szkolenia','JSK Composite — Materialien, Engineering & Schulungen'][k];
     document.querySelector('meta[name="description"]').content=[
       'Composite materials, recruitment, engineering support and technical training enquiries for aerospace, MRO, marine and industry.',

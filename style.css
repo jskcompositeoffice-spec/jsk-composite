@@ -59,3 +59,17 @@
 input,select,textarea{max-width:100%;font-size:16px}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}*,*::before,*::after{animation:none!important;transition:none!important}}
 @media(max-width:480px){.h-captcha{max-width:100%;overflow-x:auto}.hero h1{overflow-wrap:break-word}}
+@media(max-width:380px){
+ .nav{flex-wrap:wrap;gap:4px;padding-top:8px;padding-bottom:8px}
+ .nav>.logo{flex-basis:100%}
+ .nav>.right{width:100%;margin-left:0;justify-content:space-between}
+ .navlinks{top:100%}
+ .training-path .btn,.workforce-cta .btn{white-space:normal;text-align:center}
+}
+.hero-promise-intro,.hero-promise-services,.hero-promise-services i{color:#e6f2f8}
+.btn:not(.outline){background:linear-gradient(135deg,#096b9e,#174b9d)}
+.catalog-course-bottom button{background:#086793}
+.catalog-course-bottom button:hover{background:#07587d}
+.hero-copy,.catalog-heading>div,.workforce-top>div{min-width:0}
+h1,h2,h3,h4,.band b{overflow-wrap:anywhere}
+@media(max-width:580px){.catalog-heading{flex-direction:column}.catalog-counter{flex-basis:auto;min-height:70px;width:100%}.form .h-captcha{width:auto;max-width:100%;transform:none;margin-bottom:0}}

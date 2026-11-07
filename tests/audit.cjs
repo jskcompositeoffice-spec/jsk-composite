@@ -24,7 +24,7 @@ for(const engine of [chromium,webkit]){
  for(const width of [320,390,768,1024,1440]){
  await test(engine.name()+' layout/navigation '+width,async()=>{
   const p=await page('DE',width);await p.waitForFunction(()=>document.documentElement.lang==='de');
-  assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'horizontal overflow');
+  const overflow=await p.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,elements:[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().right>innerWidth+1).slice(0,12).map(e=>({tag:e.tagName,id:e.id,cls:e.className,width:e.getBoundingClientRect().width}))}));assert(overflow.scroll<=overflow.width+1,JSON.stringify(overflow));
   const missing=await p.evaluate(()=>[...document.querySelectorAll('a[href^="#"]')].map(a=>a.hash).filter(h=>h.length>1&&!document.getElementById(h.slice(1))));assert.deepEqual(missing,[]);
   if(await p.locator('#menuBtn').isVisible()){await p.locator('#menuBtn').click();assert.equal(await p.locator('#menuBtn').getAttribute('aria-expanded'),'true');await p.keyboard.press('Escape');assert.equal(await p.locator('#menuBtn').getAttribute('aria-expanded'),'false');}
   await p.screenshot({path:`test-results/${engine.name()}-${width}.png`,fullPage:true});assert.deepEqual(p.errors,[]);await p.context().close();
@@ -60,6 +60,16 @@ for(const engine of [chromium,webkit]){
   await p.route('https://api.web3forms.com/**',r=>r.fulfill({status:500,body:'upstream error'}));await p.locator('#submitBtn').click();await p.waitForFunction(()=>document.querySelector('#formStatus').classList.contains('err'));assert.equal(await p.locator('[name="message"]').inputValue(),'DO NOT SEND');assert(await p.locator('#submitBtn').isEnabled());
   assert.deepEqual(p.errors,[]);await p.context().close();
  });}
+ await test(engine.name()+' WCAG automated checks',async()=>{
+  const p=await page('PL',1440);await p.waitForFunction(()=>document.documentElement.lang==='pl');
+  await p.addScriptTag({path:require.resolve('axe-core/axe.min.js')});
+  const result=await p.evaluate(async()=>await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa','wcag22aa']}}));
+  fs.writeFileSync(`test-results/${engine.name()}-accessibility.json`,JSON.stringify(result,null,2));
+  assert.deepEqual(result.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)})),[]);await p.context().close();
+ });
+ await test(engine.name()+' privacy languages',async()=>{
+  const p=await page();for(const l of ['pl','de','en']){await p.goto(BASE+'/privacy.html#'+l);assert.equal(await p.locator('html').getAttribute('lang'),l);assert(await p.locator('#'+l).isVisible());assert.equal(await p.locator('.privacy-lang:visible').count(),1);}await p.context().close();
+ });
  await browser.close();
 }
 console.log(JSON.stringify({passed,failed}));if(failed)process.exitCode=1;
