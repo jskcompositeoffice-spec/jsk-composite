@@ -77,3 +77,6 @@ h1,h2,h3,h4,.band b{overflow-wrap:anywhere}
 .band article{min-width:0}
 .band small{overflow-wrap:anywhere}
 @media(max-width:580px){.band .wrap{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Official JSK Composite Nomex / carbon brand banner */
+.jsk-brand-banner{width:100%;background:#07131e;border-top:1px solid #27435a;border-bottom:1px solid #27435a;overflow:hidden}.jsk-brand-banner img{display:block;width:100%;max-width:2172px;height:auto;margin:0 auto;object-fit:contain}
