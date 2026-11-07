@@ -32,6 +32,21 @@ jobs:
           set -euo pipefail
           python3 -m http.server 8123 --directory dist > /tmp/jsk-server.log 2>&1 &
           node tests/audit.cjs | tee test-results/results.txt
+      - name: Verify and test production after automatic Render deployment
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+          BASE_URL: https://jsk-composite.onrender.com
+        run: |
+          set -euo pipefail
+          found=0
+          for round in $(seq 1 30); do
+            actual=$(curl --fail --silent --max-time 15 "$BASE_URL/version.txt?check=$EXPECTED_SHA" || true)
+            if [ "$actual" = "$EXPECTED_SHA" ]; then found=1; break; fi
+            sleep 15
+          done
+          test "$found" = 1
+          node tests/audit.cjs | tee test-results/production-results.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:

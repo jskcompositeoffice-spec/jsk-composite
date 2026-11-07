@@ -73,3 +73,4 @@ input,select,textarea{max-width:100%;font-size:16px}
 .hero-copy,.catalog-heading>div,.workforce-top>div{min-width:0}
 h1,h2,h3,h4,.band b{overflow-wrap:anywhere}
 @media(max-width:580px){.catalog-heading{flex-direction:column}.catalog-counter{flex-basis:auto;min-height:70px;width:100%}.form .h-captcha{width:auto;max-width:100%;transform:none;margin-bottom:0}}
+@media(min-width:1191px) and (max-width:1599px){.nav{max-width:1440px;gap:15px}.navlinks{gap:12px}.right>.btn{display:none}}

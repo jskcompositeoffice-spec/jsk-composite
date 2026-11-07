@@ -25,7 +25,7 @@ for(const engine of [chromium,webkit]){
  await test(engine.name()+' layout/navigation '+width,async()=>{
   const p=await page('DE',width);await p.waitForFunction(()=>document.documentElement.lang==='de');
   const overflow=await p.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,elements:[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().right>innerWidth+1).slice(0,12).map(e=>({tag:e.tagName,id:e.id,cls:e.className,width:e.getBoundingClientRect().width}))}));assert(overflow.scroll<=overflow.width+1,JSON.stringify(overflow));
-  const missing=await p.evaluate(()=>[...document.querySelectorAll('a[href^="#"]')].map(a=>a.hash).filter(h=>h.length>1&&!document.getElementById(h.slice(1))));assert.deepEqual(missing,[]);
+  const missing=await p.evaluate(()=>[...document.querySelectorAll('a[href^="#"]')].map(a=>a.hash).filter(h=>h.length>1&&!document.getElementById(h.slice(1))));assert.deepEqual(missing,[]);assert(await p.locator('.hero-copy').evaluate(e=>e.getBoundingClientRect().right<=innerWidth),'hero text clipped');
   if(await p.locator('#menuBtn').isVisible()){await p.locator('#menuBtn').click();assert.equal(await p.locator('#menuBtn').getAttribute('aria-expanded'),'true');await p.keyboard.press('Escape');assert.equal(await p.locator('#menuBtn').getAttribute('aria-expanded'),'false');}
   await p.screenshot({path:`test-results/${engine.name()}-${width}.png`,fullPage:true});assert.deepEqual(p.errors,[]);await p.context().close();
  });}
