@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const BASE=process.env.BASE_URL||'http://127.0.0.1:8123';
 let passed=0,failed=0;
-async function test(name,fn){try{await fn();console.log('PASS',name);passed++;}catch(e){console.error('FAIL',name,e.stack);failed++;}}
+async function test(name,fn){let timer;console.log('START',name);try{await Promise.race([fn(),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Test exceeded 60 seconds')),60000)})]);console.log('PASS',name);passed++;}catch(e){console.error('FAIL',name,e.stack);failed++;}finally{clearTimeout(timer)}}
 (async()=>{
 for(const engine of [chromium,webkit]){
  const browser=await engine.launch();
@@ -14,7 +14,7 @@ for(const engine of [chromium,webkit]){
   await p.route('https://web3forms.com/**',r=>r.fulfill({contentType:'application/javascript',body:''}));
   // Never send commercial enquiries: all submission requests are intercepted.
   await p.route('https://api.web3forms.com/**',r=>r.fulfill({json:{success:true}}));
-  await p.goto(BASE,{waitUntil:'domcontentloaded'});return p;
+  await p.goto(BASE,{waitUntil:'domcontentloaded'});await p.waitForFunction(()=>document.querySelectorAll('#products .product').length===12,null,{timeout:7000});return p;
  }
  for(const [country,lang] of [['PL','pl'],['DE','de'],['AT','de'],['CH','de'],['GB','en'],['US','en'],['CA','en'],['AU','en'],['NZ','en'],['TR','en'],['','en']]){
   await test(engine.name()+' IP '+country+' => '+lang,async()=>{const p=await page(country);await p.waitForFunction(l=>document.documentElement.lang===l,lang);assert.deepEqual(p.errors,[]);await p.context().close();});
