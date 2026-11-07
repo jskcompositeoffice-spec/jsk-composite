@@ -47,3 +47,15 @@
 
 /* IP geolocation language selector */
 .langs button[data-auto="1"]{font-weight:800;letter-spacing:.02em}.langs button[data-auto="1"].geo-on{color:#8bcafa;box-shadow:inset 0 -2px #28a9f4}@media(max-width:580px){.langs button{padding:6px}.langs button[data-auto="1"]{font-size:9px}}
+
+/* Keyboard, touch and narrow-screen safeguards. */
+[hidden]{display:none!important}
+.skip-link{position:fixed;left:12px;top:-100px;z-index:1000;background:#fff;color:#081018;padding:14px 20px}
+.skip-link:focus{top:12px}
+:focus-visible{outline:3px solid #79d6ff;outline-offset:4px}
+.langs button,.filters button,.catalog-filters button,.add,.catalog-course-bottom button{min-height:44px;min-width:44px}
+.email{overflow-wrap:anywhere}
+.fields>*{min-width:0}
+input,select,textarea{max-width:100%;font-size:16px}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}*,*::before,*::after{animation:none!important;transition:none!important}}
+@media(max-width:480px){.h-captcha{max-width:100%;overflow-x:auto}.hero h1{overflow-wrap:break-word}}

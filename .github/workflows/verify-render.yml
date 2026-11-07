@@ -1,24 +1,29 @@
-name: Verify Render public website
+name: Verify deployed Render revision
 on:
   push:
-    paths:
-      - ".github/workflows/verify-render.yml"
+    branches: [main]
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
-      - name: Check public URL and essential resources
-        shell: bash
+      - name: Wait for matching production revision
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
         run: |
-          set -u
-          base="https://jsk-composite.onrender.com"
-          for round in 1 2 3; do
-            echo "=== Round $round ==="
-            for path in / /index.html /style.css /training-catalog.js; do
-              code=$(curl --connect-timeout 8 --max-time 20 -L -sS -o /tmp/jsk-check -w '%{http_code}' "$base$path" || true)
-              bytes=$(wc -c < /tmp/jsk-check || echo 0)
-              echo "PAGE $path STATUS $code BYTES $bytes"
-            done
-            if [ "$round" != 3 ]; then sleep 8; fi
+          set -euo pipefail
+          base=https://jsk-composite.onrender.com
+          found=0
+          for round in $(seq 1 30); do
+            actual=$(curl --fail --silent --max-time 15 "$base/version.txt?check=$EXPECTED_SHA" || true)
+            if [ "$actual" = "$EXPECTED_SHA" ]; then found=1; break; fi
+            sleep 15
+          done
+          test "$found" = 1
+          for path in / /style.css /app.js /auto-language.js /ui-locales.js /privacy.html /favicon.svg /social-card.png /robots.txt /sitemap.xml; do
+            curl --fail --silent --show-error --max-time 30 "$base$path" -o /tmp/asset
+            test -s /tmp/asset
           done

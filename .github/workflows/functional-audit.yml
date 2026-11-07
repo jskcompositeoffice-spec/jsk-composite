@@ -1,82 +1,38 @@
-name: JSK Composite full website audit
+name: Chromium and WebKit audit
 on:
-  workflow_dispatch:
   push:
-    paths:
-      - .github/workflows/functional-audit.yml
+  workflow_dispatch:
+    inputs:
+      production:
+        description: Test the live Render deployment
+        type: boolean
+        default: false
+permissions:
+  contents: read
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
-      - name: Install Playwright Chromium
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --package-lock=false playwright@1.55.0
+      - run: npx playwright install --with-deps chromium webkit
+      - name: Build and check source
         run: |
-          mkdir -p /tmp/jsk-web-audit
-          cd /tmp/jsk-web-audit
-          npm init -y >/dev/null
-          npm install --silent playwright@1.55.0
-          npx playwright install --with-deps chromium
-      - name: Functional browser tests and resource checks
-        shell: bash
+          for file in *.js tests/*.cjs; do node --check "$file"; done
+          sh build.sh
+          mkdir -p test-results
+      - name: Run browser regression tests
+        env:
+          BASE_URL: ${{ inputs.production && 'https://jsk-composite.onrender.com' || 'http://127.0.0.1:8123' }}
         run: |
-          cd /tmp/jsk-web-audit
-          cat > audit.cjs <<'JAVASCRIPT'
-          const {chromium}=require('playwright');
-          const assert=require('node:assert/strict');
-          const BASE='https://jsk-composite.onrender.com';
-          let passed=0,failed=0;
-          async function test(name,fn){
-            try{const note=await fn();console.log('PASS '+name+(note?' | '+note:''));passed++}
-            catch(e){console.error('FAIL '+name+' | '+e.stack);failed++}
-          }
-          (async()=>{const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
-          const context=await browser.newContext({viewport:{width:1440,height:900}});
-          async function newPage(country='PL',viewport=null){
-            const page=await context.newPage();
-            if(viewport)await page.setViewportSize(viewport);
-            await page.route('**/api/geo',r=>r.fulfill({status:404,body:'Not Found'}));
-            await page.route('https://get.geojs.io/**',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({country})}));
-            await page.route('https://web3forms.com/client/script.js',r=>r.fulfill({status:200,contentType:'application/javascript',body:''}));
-            return page;
-          }
-          const response=await context.request.get(BASE+'/');
-          await test('main HTML HTTP 200',async()=>{assert.equal(response.status(),200);let t=await response.text();assert(t.length>10000);assert(t.includes('<html'));return 'bytes '+t.length});
-          const paths=['/style.css','/app-core.js','/app-locales.js','/app.js','/i18n.js','/training-catalog-data.js','/training-catalog.js','/auto-language.js','/privacy.html'];
-          for(const p of paths)await test('asset '+p,async()=>{const r=await context.request.get(BASE+p);assert.equal(r.status(),200);const t=await r.text();assert(t.length>200);assert(!t.includes('...[truncated]'));return 'bytes '+t.length});
-          const page=await newPage('PL');
-          const errors=[];
-          page.on('pageerror',error=>errors.push(error.message));
-          await page.goto(BASE+'/',{waitUntil:'domcontentloaded'});
-          await page.waitForTimeout(650);
-          await test('no JS runtime errors on initial load',async()=>{assert.deepEqual(errors,[])});
-          await test('products are rendered',async()=>{const n=await page.locator('#products .product').count();assert(n>=5);return n+' products'});
-          await test('industry cards are rendered',async()=>{const n=await page.locator('#industryGrid .industry').count();assert(n>=3);return n+' industries'});
-          await test('all internal section anchors exist',async()=>{let miss=await page.evaluate(()=>[...document.querySelectorAll('a[href^="#"]')].map(x=>x.getAttribute('href')).filter(h=>h.length>1&&!document.getElementById(decodeURIComponent(h.slice(1)))));assert.deepEqual(miss,[])});
-          await test('automatic PL locale from simulated IP',async()=>{await page.waitForFunction(()=>document.querySelector('[data-lang="PL"]').classList.contains('on'),{timeout:4000});assert.equal(await page.locator('html').getAttribute('lang'),'pl')});
-          await test('manual EN and DE locale switches',async()=>{await page.locator('[data-lang="EN"]').click();assert.equal(await page.locator('html').getAttribute('lang'),'en');await page.locator('[data-lang="DE"]').click();assert.equal(await page.locator('html').getAttribute('lang'),'de')});
-          await test('manual language survives reload',async()=>{await page.reload({waitUntil:'domcontentloaded'});await page.waitForTimeout(300);assert.equal(await page.locator('html').getAttribute('lang'),'de')});
-          await test('material filters and selected products',async()=>{await page.locator('[data-filter="core"]').first().click();assert(await page.locator('#products .product').count()>0);await page.locator('[data-filter="all"]').first().click();await page.locator('#products [data-add]').first().click();assert.notEqual(await page.locator('#selectedMaterials').inputValue(),'Not specified')});
-          await test('material search reacts to typing',async()=>{await page.locator('#search').fill('zzzzzzno-match');assert(await page.locator('#products .product').count()===0);await page.locator('#search').fill('');assert(await page.locator('#products .product').count()>0)});
-          await test('training catalog is populated',async()=>{const n=await page.locator('#catalogGrid').locator('article').count();assert(n>2);return n+' visible training cards'});
-          await test('training category filters',async()=>{await page.locator('#catalogFilters [data-group="ndt"]').click();assert(await page.locator('#catalogGrid').locator('article').count()>0);await page.locator('#catalogFilters [data-group="all"]').click()});
-          await test('training search works',async()=>{await page.locator('#catalogSearch').fill('zzzzzznotreal');assert.equal(await page.locator('#catalogGrid article').count(),0);await page.locator('#catalogSearch').fill('');assert(await page.locator('#catalogGrid article').count()>0)});
-          await test('inquiry form changes by enquiry type',async()=>{await page.locator('#enquiryType').selectOption('Training & Certification Support');assert(await page.locator('#trainingFields').isVisible());await page.locator('#enquiryType').selectOption('Recruitment & Engineering');assert(await page.locator('#workforceFields').isVisible());await page.locator('#enquiryType').selectOption('Materials & Supply')});
-          await test('form requires name, email, message, privacy',async()=>{assert.equal(await page.locator('#rfq input[name="name"]').getAttribute('required'),'');assert.equal(await page.locator('#rfq input[name="email"]').getAttribute('required'),'');assert.equal(await page.locator('#rfq textarea[name="message"]').getAttribute('required'),'');assert.equal(await page.locator('#rfq input[name="privacy_acknowledged"]').getAttribute('required'),'')});
-          await test('no console runtime errors after interactions',async()=>{assert.deepEqual(errors,[])});
-          await test('privacy policy page',async()=>{const p=await newPage();const r=await p.goto(BASE+'/privacy.html');assert.equal(r.status(),200);assert(await p.locator('main').count()>0);await p.close()});
-          await test('desktop layout has no horizontal overflow',async()=>{const m=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,width:innerWidth}));assert(m.scroll<=m.width+3);return JSON.stringify(m)});
-          await page.close();
-          for(const v of [{width:390,height:844},{width:768,height:1024}]){
-            await test('responsive layout '+v.width+'px',async()=>{
-              const p=await newPage('EN',v);p.on('pageerror',e=>errors.push(e.message));await p.goto(BASE+'/',{waitUntil:'domcontentloaded'});await p.waitForTimeout(250);
-              const m=await p.evaluate(()=>({scroll:document.documentElement.scrollWidth,width:innerWidth}));assert(m.scroll<=m.width+3,'horizontal overflow '+JSON.stringify(m));await p.close();return JSON.stringify(m)
-            });
-          }
-          await test('mobile navigation opens and closes',async()=>{
-            const p=await newPage('PL',{width:390,height:844});await p.goto(BASE+'/',{waitUntil:'domcontentloaded'});
-            const b=p.locator('#menuBtn');assert(await b.isVisible());await b.click();assert.equal(await b.getAttribute('aria-expanded'),'true');
-            await p.locator('#nav a[href="#materials"]').click();assert.equal(await b.getAttribute('aria-expanded'),'false');await p.close();
-          });
-          await browser.close();console.log('AUDIT RESULTS passed='+passed+' failed='+failed);if(failed)process.exitCode=1;})().catch(e=>{console.error(e);process.exitCode=1});
-          JAVASCRIPT
-          node audit.cjs
+          python3 -m http.server 8123 --directory dist > /tmp/jsk-server.log 2>&1 &
+          node tests/audit.cjs | tee test-results/results.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-audit
+          path: test-results

@@ -1,1 +1,0 @@
-"use strict";module.exports=function handler(req,res){const c=String(req.headers["x-vercel-ip-country"]||"").trim().toUpperCase();res.setHeader("Cache-Control","private, no-store, max-age=0");res.setHeader("Content-Type","application/json; charset=utf-8");res.status(200).json({country:/^[A-Z]{2}$/.test(c)?c:""})};

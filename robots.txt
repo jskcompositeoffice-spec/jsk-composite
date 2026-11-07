@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://jsk-composite.onrender.com/sitemap.xml
